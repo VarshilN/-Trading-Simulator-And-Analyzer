@@ -1,114 +1,100 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session,jsonify
 from datetime import datetime, timedelta, date
 from jugaad_data.nse import stock_df
+import secrets
 from jugaad_data.nse import index_df,history
 import plotly.express as px
 from jugaad_data.nse import NSELive
 import yfinance as yf
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError 
 from flask_bcrypt import Bcrypt
+from flask import session
 from flask_mail import Mail, Message 
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from flask import *
 app = Flask(__name__)
+app.secret_key =secrets.token_hex(16) 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
-app.secret_key = 'sdsad'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 's29207488@gmail.com'
 app.config['MAIL_PASSWORD'] = 'hellobgmi'
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+# session(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     verified = db.Column(db.Boolean, default=False)
+class watchlist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    symbol = db.Column(db.String(10), nullable=False)
+    last_price = db.Column(db.Float)
+    price_change = db.Column(db.Float)
+    percent_change = db.Column(db.Float)
+    market_status = db.Column(db.String(10))
+    vwap = db.Column(db.Float)
+    market_cap = db.Column(db.Float)
 with app.app_context():
     db.create_all()
-mail = Mail(app)
+
 selected_stocks=[]
-# app=Flask(__name__)
-@app.route('/')
+
+@app.route('/',methods=['POST','GET'])
 def home():
     return render_template('HomePage.html',image_path='images/stock@india.jpeg')
-@app.route('/login',methods=['POST'])
+email_verification_serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+@app.route('/login',methods=['GET','POST'])
 def login():
-    if request.form.get('method')=='POST':
-        name = request.form.get('name')
+    if request.method =='POST':
+        email = request.form.get('email')
         password = request.form.get('password')
-        user = User.query.filter_by(name=name).first()
+        user = User.query.filter_by(email=email).first()
         if user and bcrypt.check_password_hash(user.password, password):
-            flash('Login successful!', 'success')
-            return render_template('dashboard.html')
+            session['email']=email
+            return render_template('User.html')
         else:
             flash('Invalid name or password. Please try again.', 'danger')
-            return render_template('login.html')
+            return redirect(url_for('login')) 
     else:
-        flash('invalid method')
-        return redirect(url_for('login'))
-email_verification_serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])   
-@app.route('/register')
+        return render_template('login.html')
+@app.route('/register',methods=['GET','POST'])
 def register():
-    def send_verification_email(user):
-        token = generate_verification_token(user.email)
-        subject = 'Account Verification - Your App'
-        message = f'Thank you for registering with Your App. Please click the following link to verify your email:\n\n{url_for("verify_email", token=token, _external=True)}'
-        send_email(user.email, subject, message)
-    def generate_verification_token(email):
-    # You can use a more secure method for generating the token
-        return email_verification_serializer.dumps(email) 
-    def send_email(to, subject, body):
-        msg = Message(subject, recipients=[to], body=body)
-        mail.send(msg)
     error_message = None  # Initialize error message
     registration_success_message = None  # Initialize success message
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
+        confirm = request.form['confirm_password']  # Fix the variable name here
         password = request.form['password']
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(name=name, email=email, password=hashed_password)
-        try:
-            db.session.add(new_user)
-            db.session.commit()
-            send_verification_email(new_user)
-            registration_success_message = 'Registration successful! A verification email has been sent to your email address. Please check your inbox and click the verification link to activate your account.'
-            flash(registration_success_message, 'success')
-            return redirect(url_for('registration_success'))
-        except IntegrityError:  # Handle unique constraint violation (email already in use)
-            db.session.rollback()
-            error_message = 'Email is already in use. Please choose a different email.'
-    # Render the template with the error message and success message if present
-    return render_template('register.html', error_message=error_message, registration_success_message=registration_success_message)  
-    # return render_template('register.html')
-@app.route('/verify_email/${token}')
-def verify_email(token):
-    try:
-        email = email_verification_serializer.loads(token, max_age=3600)  # Token expires in 1 hour
-        user = User.query.filter_by(email=email).first()
-        if user:
-            user.verified = True
-            db.session.commit()
-            flash('Email verification successful. You can now log in.', 'success')
+        if confirm != password:  # Fix the comparison here
+            error_message='invalid_password'
+            flash('please re-enter password')
+            return redirect(url_for('register'))
         else:
-            flash('Invalid verification token. Please try again.', 'danger')
-    except SignatureExpired:
-        flash('Verification link has expired. Please register again.', 'danger')
-    except BadTimeSignature:
-        flash('Invalid verification token. Please try again.', 'danger')
-    return redirect(url_for('login'))
-
-
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            new_user = User(name=name, email=email, password=hashed_password)
+            try:
+                db.session.add(new_user)
+                db.session.commit()
+                # send_verification_email(new_user)
+                registration_success_message = 'Registration successful! A verification email has been sent to your email address. Please check your inbox and click the verification link to activate your account.'
+                flash(registration_success_message, 'success')
+                return redirect(url_for('dashboard'))
+            except IntegrityError:  # Handle unique constraint violation (email already in use)
+                db.session.rollback()
+                error_message = 'Email is already in use. Please choose a different email.'
+    return render_template('register.html', error_message=error_message, registration_success_message=registration_success_message) 
 @app.route('/dashboard',methods=['GET','POST'])
 def dashboard():
     return render_template('User.html')
 @app.route('/host')
 def host():
-    gainers=[]
-    loosers=[]
     n=NSELive()
     q=n.live_index('NIFTY 50')
     n=NSELive()
@@ -243,7 +229,7 @@ def filters():
         peg_ratio = stock.info.get('pegRatio', 'N/A')
         peg_ratio=0
         roe=0 
-        dividend_yield = stock.info['dividendYield']
+        dividend_yield = stock.info.get('dividendYield','N/A')
         average_price = stock.info['regularMarketDayHigh'] + stock.info['regularMarketDayLow'] / 2
         dic={'mcap':market_cap,'pe':trailing_pe_ratio,'pb':pb_ratio,'peg':peg_ratio,'roe':roe,'div':dividend_yield,'avg':average_price}
         return dic  
@@ -293,27 +279,82 @@ def filters():
     elif selected=='div':
         filtered_stocks=sorted(filtered_stocks,key=custom_sort,reverse=True)
         return render_template('filters.html',filtered_stocks=filtered_stocks,idx=idx,flag=7)
+    
+@app.route('/update_watchList',methods=['GET','POST'])
+def update_watchList():
+    user = User.query.filter_by(email=session['email']).first()
+    n=NSELive()
+    market_status_data = n.market_status()
+    status=market_status_data['marketState'][0]['marketStatus']
+    if user:
+        watchlist_items = watchlist.query.filter_by(user_id=user.id).all()
+        updated_watchlist = []
+        for item in watchlist_items:
+            src=item.symbol
+            q=n.stock_quote(src)['priceInfo']
+            stock=yf.ticker(src+'.NS')
+            market_cap = stock.info.get('marketCap', 'N/A')
+            watchlist_item = watchlist.query.filter_by(user_id=user.id, symbol=src).first()
+            watchlist_item.last_price = round(q['lastPrice'], 2)
+            watchlist_item.price_change = round(q['change'], 2)
+            watchlist_item.percent_change = round(q['pChange'], 2)
+            watchlist_item.market_status = status
+            watchlist_item.vwap = round(q['vwap'], 2)
+            watchlist_item.market_cap = round(market_cap, 3)
+    return redirect(url_for('watchList'))
+@app.route('/remove_stock',methods=['GET','POST'])
+def remove_stock():
+    src=request.args.get('symbol')
+    user = User.query.filter_by(email=session['email']).first()
+    watchlist_item = watchlist.query.filter_by(user_id=user.id,symbol=src).first()
+    if watchlist_item:
+        db.session.delete(watchlist_item)
+        db.session.commit()
+    return redirect(url_for('watchList'))
 @app.route('/watchList')
 def watchList():
-    return render_template('watchlist.html')
-@app.route('/add_stock')
+    user = User.query.filter_by(email=session['email']).first()
+    if user:
+        watchlist_items = watchlist.query.filter_by(user_id=user.id).all()
+        return render_template('watchlist.html', watchlist_items=watchlist_items)
+    return "User not found"  # Handle the case when the user is not found
+@app.route('/add_stock',methods=['GET','POST'])
 def add_stock():
-    selected=request.args.get('search_type')
-    src=request.args.get('src')
-    n=NSELive()
-    if selected=='symbol':
-        market_status_data = n.market_status()
-        market_cap_in_crs = market_status_data.get('marketcap', {}).get('marketCapinCRRupees', None)
-        status=market_status_data['marketState'][0]['marketStatus']
-        q=n.stock_quote(src)['priceInfo']
-        return jsonify({
-            'sym': src,
-            'lp': round(q['lastPrice'],2),
-            'change': round(q['change'],2),
-            'chg':round(q['pChange'],2),
-            'st': status,
-            'vwp': round(q['vwap'],2),
-            'cp': round(market_cap_in_crs,3)
-        })
+        src=request.args.get('src')
+        ticker_symbol=src+'.NS'
+        stock=yf.Ticker(ticker_symbol)
+        market_cap = stock.info.get('marketCap', 'N/A')
+        selected=request.args.get('search_type')
+        n=NSELive()
+        user = User.query.filter_by(email=session['email']).first()   
+        if selected=='symbol':
+            market_status_data = n.market_status()
+            status=market_status_data['marketState'][0]['marketStatus']
+            q=n.stock_quote(src)['priceInfo']
+            if user:
+                if not watchlist.query.filter_by(user_id=user.id, symbol=src).first():    
+                    watchlist_item = watchlist(
+                        user_id=user.id,
+                        symbol=src,
+                        last_price=round(q['lastPrice'], 2),
+                        price_change=round(q['change'], 2),
+                        percent_change=round(q['pChange'], 2),
+                        market_status=status,
+                        vwap=round(q['vwap'], 2),
+                        market_cap=round(market_cap, 3)
+                    )
+                    db.session.add(watchlist_item)
+                else:
+                    watchlist_item = watchlist.query.filter_by(user_id=user.id, symbol=src).first()
+                    if watchlist_item:
+                        # Update the existing record
+                        watchlist_item.last_price = round(q['lastPrice'], 2)
+                        watchlist_item.price_change = round(q['change'], 2)
+                        watchlist_item.percent_change = round(q['pChange'], 2)
+                        watchlist_item.market_status = status
+                        watchlist_item.vwap = round(q['vwap'], 2)
+                        watchlist_item.market_cap = round(market_cap, 3)
+                db.session.commit()
+                return redirect(url_for('watchList'))
 if __name__ == '__main__':
     app.run(debug=True)
