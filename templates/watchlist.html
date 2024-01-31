@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -103,7 +103,7 @@
       <input type="text" name="src" placeholder="Search for Symbol/Index...">
       <select name="search_type">
         <option value="symbol">Symbol</option>
-        <option value="index">Index</option>
+        <!-- <option value="index">Index</option> -->
       </select>
       <button type="submit">Add</button>
     </form>
@@ -112,7 +112,6 @@
 
     <div class="card">
       <h2 class="title">Stocks/Indices Watchlist</h2>
-
       <!-- Your table to display stock information -->
       <table>
         <thead>
@@ -127,74 +126,36 @@
           </tr>
         </thead>
         <tbody id="stockTableBody">
+          {% for item in watchlist_items %}
+          <tr>
+            <td>{{ item.symbol }}</td>
+            <td class="success">{{ item.last_price }}</td>
+            <td>{{ item.price_change }}</td>
+            <td>{{ item.percent_change }}</td>
+            <td class="success">{{ item.market_status }}</td>
+            <td class="success">{{ item.vwap }}</td>
+            <td class="success">{{ item.market_cap }}</td>
+            <td>
+              <form method='post' action="/remove_stock?symbol={{item.symbol}}">
+                <button class="removeButton danger" type="submit">X</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
   </section>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const form = document.querySelector("form");
-      const stockTableBody = document.getElementById("stockTableBody");
-
-      function updateStockData() {
-        // Iterate over existing rows and update data
-        const rows = stockTableBody.getElementsByTagName("tr");
-        for (const row of rows) {
-          const symbol = row.cells[0].textContent;
-          // Make an AJAX request to your /add_stock route
-          fetch(`/add_stock?search_type=symbol&src=${symbol}`)
-            .then(response => response.json())
-            .then(data => {
-              // Update the existing row with the latest data
-              row.cells[1].textContent = data.lp;
-              row.cells[2].textContent = data.change;
-              row.cells[3].textContent = data.chg;
-              row.cells[4].textContent = data.st;
-              row.cells[5].textContent = data.vwp;
-              row.cells[6].textContent = data.cp;
-              row.cells[7].innerHTML = '<button class="danger">X</button>'
-            })
-            .catch(error => {
-              console.error("Error fetching data:", error);
-            });
-        }
-      }
-      setInterval(updateStockData, 300000);
-      form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        const formData = new FormData(form);
-        const searchType = formData.get("search_type");
-        const src = formData.get("src");
-        // const chgClass = data.chg < 0 ? `style="color:#d9534f;"` : `class='success'`;
-        // const changeClass = data.change < 0 ? `style="color:#d9534f;` : `class='success'`;
-        fetch(`/add_stock?search_type=${searchType}&src=${src}`)
+  <sript>
+    <script>
+      function udpate() {
+        fetch('/update_watchList')
           .then(response => response.json())
-          .then(data => {
-            const newRow = document.createElement("tr");
-            newRow.innerHTML = `
-            <td>${data.sym}</td>
-            <td class="success">${data.lp}</td>
-            <td>${data.change}</td>
-          <td>${data.chg}</td>
-            <td class="success">${data.st}</td>
-            <td class="success">${data.vwp}</td>
-            <td class="success">${data.cp}</td>
-            <td>
-              <button class="removeButton danger" onclick=removeButton()>X</button>
-            </td>
-          `;
-            stockTableBody.appendChild(newRow);
-            const removeButton = newRow.querySelector(".removeButton");
-            removeButton.addEventListener("click", function (e) {
-              e.preventDefault();
-              let item = e.target.closest('tr');
-              stockTableBody.removeChild(item);
-            });
-          });
-      });
-    })
-  </script>
+          .catch(error => console.error('Error updating watchlist:', error));
+      }
+      setInterval(updateWatchlist, 300000);
+    </script>
+  </sript>
 </body>
 
 </html>
