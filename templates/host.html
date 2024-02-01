@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/host.css') }}">
+</head>
+
+<body>
+    <section id="index">
+        <h1>Index</h1>
+        <div class="row">
+            <a class="clickable-box" href="/plot?search_type=index&src=NIFTY 50">
+                <p style="font-size:150%;font-weight:bold">NIFTY 50</p>
+            </a>
+        </div>
+        <h1>Top Gainers (by price change):</h1><br>
+        <section class="card-container">
+            {% for stock in gainers %}
+            <div class="gainer-card card">
+                <h3>{{stock['meta']['companyName']}}</h3>
+                <h5>{{stock['symbol']}}</h5>
+                {% if stock['pChange'] > 0 %}
+                <h5>Price Change: </h5>
+                <p class="change-positive">{{stock['change']}}</p>
+                <h5>Price Change(%): </h5>
+                <p class="change-positive">{{stock['pChange']}}</p>
+                {% else %}
+                <h5>Price Change:</h5>
+                <p class="change-negative">{{stock['change']}}</p>
+                <h5>Price Change(%):</h5>
+                <p class="change-negative">{{stock['pChange']}}</p>
+                {%endif%}
+            </div>
+            {% endfor %}
+        </section><br>
+        <h1>Top Losers (by price change):</h1><br>
+        <section class="card-container">
+            {% for stock in losers %}
+            <div class="loser-card card">
+                <h3>{{stock['meta']['companyName']}}</h3>
+                <h5>{{stock['symbol']}}</h5>
+                {% if stock['pChange'] > 0 %}
+                <h5>Price Change: </h5>
+                <p class="change-positive">{{stock['change']}}</p>
+                <h5> Price Change(%):</h5>
+                <p class="change-positive">{{stock['pChange']}}</p>
+                {% else %}
+                <h5>Price Change:</h5>
+                <p class="change-negative">{{stock['change']}}</p>
+                <h5>Price Change(%):</h5>
+                <p class="change-negative">{{stock['pChange']}}</p>
+                {%endif%}
+            </div>
+            {% endfor %}
+        </section>
+    </section>
+    <br>
+    <section id="sign">
+        <h1>Please SignUp for more Features!!</h1>
+        <div class="text-end">
+            <a class="btn btn-outline-light" method="POST" href="{{url_for('user.login')}}">Login</a>
+            <a class="btn btn-warning" method="POST" href="{{url_for('user.register')}}">Sign-up</a>
+        </div>
+    </section>
+</body>
+
+</html>

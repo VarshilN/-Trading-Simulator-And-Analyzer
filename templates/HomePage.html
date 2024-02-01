@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/HomePage.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <h1>StockEnds</h1>
+        <div class="buttons-container">
+            <a class="login" href="{{url_for('user.login')}}">Login</a>
+            <a class="signup" href="{{url_for('user.register')}}">Sign-up</a>
+        </div>
+    </header>
+
+    <section>
+        <div class="left-section">
+            <img src="{{ url_for('static', filename='images/stock@india.jpeg') }}" alt="Left Image"><br>
+            <h1 class="heading">Our Responsive Application for Indian Stocks</h1>
+            <p class="content">Analyze Stocks With Great Features and much more.</p>
+        </div>
+        <div class="right-section">
+            <h1 class="title">StockEnds</h1>
+            <p class="content">A website to analyze Indian Stock Market</p><br>
+            <img src="{{ url_for('static', filename='images/stock-market-icon.jpg') }}" width="106" height="106"
+                alt="Stock Market icon" title="Stock Market icon">
+            <br>
+            <div style="padding-left: 25%;">
+                <a class="get-started" href="{{url_for('host')}}">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+</head>
+
+<body>
+    <div class="right-section">
+        <div class="right-content">
+            <h2>Login</h2>
+            <p id="err" style="color:red">{{error_message|safe}}</p>
+            <form method="post">
+                <input type="text" name="email" placeholder="email address..." required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button class="btn btn-primary" type="submit">Login</button>
+            </form>
+            <p>Don't have an account? <a href="{{url_for('user.register')}}">Register here</a></p>
+        </div>
+    </div>
+</body>
+<srcipt src="../static/js/message.js"></srcipt>
+
+</html>

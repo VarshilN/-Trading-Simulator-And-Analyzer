@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WatchList</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/watchlist.css') }}" </head>
+
+<body>
+  <section class="container">
+    <form action="/add_stock" role="search">
+      <input type="text" name="src" placeholder="Search for Symbol/Index...">
+      <select name="search_type">
+        <option value="symbol">Symbol</option>
+        <!-- <option value="index">Index</option> -->
+      </select>
+      <button type="submit">Add</button>
+    </form>
+  </section>
+  <section class="item-container">
+
+    <div class="card">
+      <h2 class="title">Stocks/Indices Watchlist</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Last Price</th>
+            <th>Change</th>
+            <th>Chg %</th>
+            <th>Market Status</th>
+            <th>vwap</th>
+            <th>Market Cap</th>
+          </tr>
+        </thead>
+        <tbody id="stockTableBody">
+          {% for item in watchlist_items %}
+          <tr>
+            <td>{{ item.symbol }}</td>
+            <td class="success">{{ item.last_price }}</td>
+            <td>{{ item.price_change }}</td>
+            <td>{{ item.percent_change }}</td>
+            <td class="success">{{ item.market_status }}</td>
+            <td class="success">{{ item.vwap }}</td>
+            <td class="success">{{ item.market_cap }}</td>
+            <td>
+              <form method='post' action="/remove_stock?symbol={{item.symbol}}">
+                <button class="removeButton danger" type="submit">X</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <script src="{{url_for('static',filename='js/watchlist.js')}}"></script>
+</body>
+
+</html>
