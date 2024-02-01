@@ -6,13 +6,14 @@ This project involves creating a user interface for a stock analysis platform wi
 Features:
 Stock Graphs:
 Users can input a specific stock symbol.
-Choose a time scale (daily, weekly, etc.) for the stock price graph.
+Choose a time scale (weekly,1Yr,3Yr,5Yr, etc.) for the stock price graph.
 The graph should display historical stock prices based on the selected time scale.
 Compare Stocks:
 Users can input multiple stock symbols.
 Choose a time scale for the comparison graph.
 Visualize and compare the historical prices of multiple stocks on the same graph.
+graphs are available in scatter as well as candlestick format.
 Technical Filters:
-
 Apply filters such as P/E ratio, average price, etc., to narrow down the list of stocks.
 View a list of stocks that meet the specified technical criteria.
+modules- self explainatory.
