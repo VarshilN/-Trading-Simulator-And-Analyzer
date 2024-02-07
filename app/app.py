@@ -1,5 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session,jsonify
-# import secrets
+from flask import Flask, render_template
 import sys
 import os
 from jugaad_data.nse import NSELive
